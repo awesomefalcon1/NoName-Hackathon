@@ -1,4 +1,4 @@
-"use client" // Add this at the top
+"use client"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,79 +9,20 @@ import Link from "next/link"
 import { db } from "@/lib/firebase"
 import { collection, getDocs, query, orderBy, type DocumentData, type QueryDocumentSnapshot } from "firebase/firestore"
 import { Loader2 } from "lucide-react"
-
-// Mock data for recipes
-// const mockRecipes = [
-//   {
-//     id: "1",
-//     name: "Spicy Chicken Pasta",
-//     user: "ChefAnna",
-//     likes: 120,
-//     comments: 15,
-//     imageUrl: "/placeholder.svg?width=300&height=200&text=Pasta",
-//     shortSupply: true,
-//   },
-//   {
-//     id: "2",
-//     name: "Vegan Lentil Soup",
-//     user: "GreenEats",
-//     likes: 250,
-//     comments: 30,
-//     imageUrl: "/placeholder.svg?width=300&height=200&text=Soup",
-//     shortSupply: false,
-//   },
-//   {
-//     id: "3",
-//     name: "Quick Beef Stir-fry",
-//     user: "FastMeals",
-//     likes: 85,
-//     comments: 10,
-//     imageUrl: "/placeholder.svg?width=300&height=200&text=Stir-fry",
-//     shortSupply: false,
-//   },
-//   {
-//     id: "4",
-//     name: "Berry Smoothie Bowl",
-//     user: "HealthyLife",
-//     likes: 300,
-//     comments: 45,
-//     imageUrl: "/placeholder.svg?width=300&height=200&text=Smoothie",
-//     shortSupply: true,
-//   },
-//   {
-//     id: "5",
-//     name: "Homemade Pizza",
-//     user: "PizzaMaster",
-//     likes: 180,
-//     comments: 22,
-//     imageUrl: "/placeholder.svg?width=300&height=200&text=Pizza",
-//     shortSupply: false,
-//   },
-//   {
-//     id: "6",
-//     name: "Chocolate Chip Cookies",
-//     user: "SweetTooth",
-//     likes: 450,
-//     comments: 60,
-//     imageUrl: "/placeholder.svg?width=300&height=200&text=Cookies",
-//     shortSupply: false,
-//   },
-// ]
+import ProtectedRoute from "@/components/protected-route" // Import ProtectedRoute
 
 interface Recipe {
   id: string
   name: string
-  userName: string // Assuming you store userName or userId
+  userName: string
   likes: number
-  // commentsCount: number; // Assuming you might have this
   imageUrl: string
-  shortSupply?: boolean // If you have this logic
-  // Add other fields as per your Firestore structure
+  shortSupply?: boolean
   briefIngredients?: string
   userId?: string
 }
 
-export default function RecipesPage() {
+function RecipesPageContent() {
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -91,7 +32,7 @@ export default function RecipesPage() {
       setIsLoading(true)
       try {
         const recipesCollection = collection(db, "recipes")
-        const q = query(recipesCollection, orderBy("createdAt", "desc")) // Order by creation time
+        const q = query(recipesCollection, orderBy("createdAt", "desc"))
         const querySnapshot = await getDocs(q)
         const recipesData = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
           id: doc.id,
@@ -100,7 +41,6 @@ export default function RecipesPage() {
         setRecipes(recipesData)
       } catch (error) {
         console.error("Error fetching recipes:", error)
-        // Handle error (e.g., show a toast message)
       } finally {
         setIsLoading(false)
       }
@@ -111,8 +51,8 @@ export default function RecipesPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-8rem)]">
-        <Loader2 className="h-12 w-12 animate-spin text-yellow-500" />
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-12rem)]">
+        <Loader2 className="h-10 w-10 animate-spin text-yellow-500" />
       </div>
     )
   }
@@ -141,9 +81,6 @@ export default function RecipesPage() {
           </Button>
         </div>
       </div>
-
-      {/* Categories or Filters could go here */}
-      {/* <div className="mb-8 flex space-x-2"> ...filter buttons... </div> */}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredRecipes.map((recipe) => (
@@ -193,15 +130,12 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         </Link>
         <p className="text-sm text-muted-foreground">By {recipe.userName}</p>
       </CardHeader>
-      <CardContent className="pb-4">{/* Could add a short description or tags here */}</CardContent>
+      <CardContent className="pb-4"></CardContent>
       <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="sm" className="px-2">
             <Heart className="h-4 w-4 mr-1" /> {recipe.likes}
           </Button>
-          {/* <Button variant="ghost" size="sm" className="px-2">
-            <MessageCircle className="h-4 w-4 mr-1" /> {recipe.commentsCount || 0}
-          </Button> */}
         </div>
         <Button
           variant="outline"
@@ -212,5 +146,13 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         </Button>
       </CardFooter>
     </Card>
+  )
+}
+
+export default function RecipesPage() {
+  return (
+    <ProtectedRoute message="Please sign in to view recipes.">
+      <RecipesPageContent />
+    </ProtectedRoute>
   )
 }
