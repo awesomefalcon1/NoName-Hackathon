@@ -35,7 +35,13 @@ import { useRouter } from "next/navigation"
 import ProtectedRoute from "@/components/protected-route"
 import { doc, updateDoc, collection, query, where, getDocs, orderBy } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import type { Recipe, UploadProfilePictureResponse } from "@/models"
+import type { Recipe } from "@/models"
+
+interface UploadProfilePictureResponse {
+  success: boolean
+  message?: string
+  photoURL?: string
+}
 
 interface UserStats {
   recipesUploaded: number
@@ -98,13 +104,13 @@ function ProfilePageContent() {
       })
 
       // Set current photo URL
-      setCurrentPhotoURL(userProfile.photoURL || user?.photoURL || null)
+      setCurrentPhotoURL(user?.photoURL || null)
 
       // Set join date from user creation
       if (user?.metadata?.creationTime) {
         setUserStats((prev) => ({
           ...prev,
-          joinedDate: new Date(user.metadata.creationTime).toLocaleDateString(),
+          joinedDate: new Date(user.metadata.creationTime!).toLocaleDateString(),
         }))
       }
     }
@@ -185,7 +191,7 @@ function ProfilePageContent() {
       toast({
         title: "Profile Updated",
         description: "Your profile information has been saved successfully.",
-        variant: "success",
+        variant: "default",
       })
 
       setIsEditing(false)
@@ -269,7 +275,7 @@ function ProfilePageContent() {
       toast({
         title: "Profile Picture Updated",
         description: "Your profile picture has been updated successfully!",
-        variant: "success",
+        variant: "default",
       })
 
       // Clear the file input

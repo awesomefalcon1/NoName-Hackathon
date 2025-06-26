@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.22",
     "@babel/runtime": "latest",
     "@codemirror/lang-css": "latest",
     "@codemirror/lang-html": "latest",
@@ -49,6 +50,7 @@
     "@uiw/codemirror-theme-vscode": "latest",
     "@uiw/codemirror-theme-xcode": "latest",
     "@uiw/react-codemirror": "latest",
+    "ai": "^4.3.16",
     "autoprefixer": "^10.4.20",
     "busboy": "latest",
     "class-variance-authority": "^0.7.1",
