@@ -1,0 +1,281 @@
+[
+  {
+    "name": "Marcella Hazan's Bolognese Sauce",
+    "processes": [
+      "Put the vegetable oil, 3 tablespoons of butter, and chopped onion in a heavy-bottomed pot over medium heat.",
+      "Cook and stir the onion until it becomes translucent.",
+      "Add the chopped celery and carrot, and cook for about 2 minutes, stirring to coat the vegetables well.",
+      "Add the ground beef, a large pinch of salt, and a few grindings of black pepper. Crumble the meat with a fork, stir well, and cook until the beef has lost its raw red color.",
+      "Add the whole milk and let it simmer gently, stirring frequently, until it has bubbled away completely and evaporated.",
+      "Add a tiny grating, approximately 1/8 teaspoon, of whole nutmeg, and stir.",
+      "Add the dry white wine and let it simmer until it has evaporated.",
+      "Add the canned imported Italian plum tomatoes and stir thoroughly to coat all ingredients well.",
+      "When the tomatoes begin to bubble, turn the heat down so that the sauce cooks at the laziest of simmers, with just an intermittent bubble breaking through to the surface.",
+      "Cook, uncovered, for at least 3 hours or more, stirring from time to time.",
+      "If the sauce begins to dry out, add 1/2 cup of water whenever necessary to keep it from sticking. At the end, no water should be left and the fat must separate from the sauce.",
+      "Taste and correct for salt.",
+      "Serve hot, tossed with cooked drained pasta and the remaining 1 tablespoon of butter, and with freshly grated Parmigiano-Reggiano cheese at the table."
+    ],
+    "ingredients": [
+      {
+        "product": {
+          "amount": 15,
+          "unit": "ml",
+          "name": "Vegetable oil"
+        }
+      },
+      {
+        "product": {
+          "amount": 57,
+          "unit": "g",
+          "name": "Butter"
+        }
+      },
+      {
+        "product": {
+          "amount": 80,
+          "unit": "g",
+          "name": "Chopped onion"
+        }
+      },
+      {
+        "product": {
+          "amount": 67,
+          "unit": "g",
+          "name": "Chopped celery"
+        }
+      },
+      {
+        "product": {
+          "amount": 80,
+          "unit": "g",
+          "name": "Chopped carrot"
+        }
+      },
+      {
+        "product": {
+          "amount": 340,
+          "unit": "g",
+          "name": "Ground beef chuck"
+        }
+      },
+      {
+        "product": {
+          "amount": 1,
+          "unit": "g",
+          "name": "Salt"
+        }
+      },
+      {
+        "product": {
+          "amount": 1,
+          "unit": "g",
+          "name": "Black pepper"
+        }
+      },
+      {
+        "product": {
+          "amount": 237,
+          "unit": "ml",
+          "name": "Whole milk"
+        }
+      },
+      {
+        "product": {
+          "amount": 1,
+          "unit": "g",
+          "name": "Whole nutmeg (grated)"
+        }
+      },
+      {
+        "product": {
+          "amount": 237,
+          "unit": "ml",
+          "name": "Dry white wine"
+        }
+      },
+      {
+        "product": {
+          "amount": 360,
+          "unit": "g",
+          "name": "Canned imported Italian plum tomatoes (cut up, with their juice)"
+        }
+      },
+      {
+        "product": {
+          "amount": 567,
+          "unit": "g",
+          "name": "Pasta"
+        }
+      },
+      {
+        "product": {
+          "amount": 50,
+          "unit": "g",
+          "name": "Freshly grated Parmigiano-Reggiano cheese"
+        }
+      }
+    ],
+    "estimated_completion_time": 240
+  },
+  {
+    "name": "Slow-Roasted Crispy Pork Belly",
+    "processes": [
+      "Score the skin of the pork belly lightly in a crosshatch pattern, being careful not to cut into the meat.",
+      "Pat the pork belly skin thoroughly dry with paper towels.",
+      "Place the pork belly, skin-side up, on a wire rack set over a baking sheet and refrigerate uncovered overnight (at least 8 hours, up to 24 hours) to dry out the skin.",
+      "On the day of cooking, remove the pork belly from the fridge and allow it to come to room temperature for about 30 minutes.",
+      "Preheat your oven to 150°C (300°F).",
+      "Rub the flesh side of the pork belly with 10 ml olive oil, 10 grams salt, and 3 grams black pepper.",
+      "Turn the pork belly skin-side up. Rub the skin thoroughly with an additional 10 ml olive oil and 5 grams salt, ensuring the salt is worked into the scored lines.",
+      "Place the pork belly, skin-side up, on the wire rack set over a rimmed baking sheet.",
+      "Slow roast in the preheated oven for 3 hours.",
+      "Remove the pork belly from the oven and carefully pour off any rendered fat from the baking sheet.",
+      "Increase the oven temperature to 230°C (450°F).",
+      "Return the pork belly to the oven and roast for another 20-30 minutes, or until the skin is puffed, golden brown, and crispy. Watch carefully to prevent burning.",
+      "Remove from the oven and let the pork belly rest for 15 minutes before carving and serving."
+    ],
+    "ingredients": [
+      {
+        "product": {
+          "amount": 1000,
+          "unit": "grams",
+          "name": "Pork Belly"
+        }
+      },
+      {
+        "product": {
+          "amount": 20,
+          "unit": "ml",
+          "name": "Olive Oil"
+        }
+      },
+      {
+        "product": {
+          "amount": 15,
+          "unit": "grams",
+          "name": "Salt"
+        }
+      },
+      {
+        "product": {
+          "amount": 3,
+          "unit": "grams",
+          "name": "Black Pepper"
+        }
+      }
+    ],
+    "estimated_completion_time": 240
+  },
+  {
+    "name": "Shepherd's Pie",
+    "processes": [
+      "Preheat oven to 200°C (400°F).",
+      "Peel and dice potatoes. Place them in a large pot, cover with cold salted water, and bring to a boil. Cook for 15-20 minutes, or until fork-tender.",
+      "While potatoes cook, in a large oven-safe skillet or Dutch oven, brown the ground meat over medium-high heat. Break it up with a spoon as it cooks. Drain any excess fat.",
+      "Add diced onions and carrots to the skillet with the meat. Cook, stirring occasionally, until vegetables soften, about 5-7 minutes.",
+      "Stir in the tomato paste and flour, cooking for 1 minute.",
+      "Gradually pour in the beef broth and Worcestershire sauce. Bring to a simmer, stirring constantly, and cook until the sauce thickens, about 5 minutes.",
+      "Stir in the frozen peas. Season the meat mixture with salt and black pepper to taste.",
+      "Once potatoes are cooked, drain them well. Mash them with butter and milk until smooth and creamy. Season with salt and pepper.",
+      "Pour the meat mixture into a 2-quart baking dish (if not using an oven-safe skillet).",
+      "Evenly spread the mashed potatoes over the meat mixture, using a fork to create decorative peaks.",
+      "Bake for 25-30 minutes, or until the potato topping is golden brown and the filling is bubbly.",
+      "Let the shepherd's pie rest for 5-10 minutes before serving."
+    ],
+    "ingredients": [
+      {
+        "product": {
+          "amount": 500,
+          "unit": "grams",
+          "name": "Ground Lamb or Beef"
+        }
+      },
+      {
+        "product": {
+          "amount": 150,
+          "unit": "grams",
+          "name": "Onion, Diced"
+        }
+      },
+      {
+        "product": {
+          "amount": 150,
+          "unit": "grams",
+          "name": "Carrots, Diced"
+        }
+      },
+      {
+        "product": {
+          "amount": 200,
+          "unit": "grams",
+          "name": "Frozen Peas"
+        }
+      },
+      {
+        "product": {
+          "amount": 250,
+          "unit": "ml",
+          "name": "Beef Broth"
+        }
+      },
+      {
+        "product": {
+          "amount": 30,
+          "unit": "grams",
+          "name": "Tomato Paste"
+        }
+      },
+      {
+        "product": {
+          "amount": 20,
+          "unit": "grams",
+          "name": "All-Purpose Flour"
+        }
+      },
+      {
+        "product": {
+          "amount": 15,
+          "unit": "ml",
+          "name": "Worcestershire Sauce"
+        }
+      },
+      {
+        "product": {
+          "amount": 1000,
+          "unit": "grams",
+          "name": "Potatoes, Peeled and Diced"
+        }
+      },
+      {
+        "product": {
+          "amount": 50,
+          "unit": "grams",
+          "name": "Unsalted Butter"
+        }
+      },
+      {
+        "product": {
+          "amount": 100,
+          "unit": "ml",
+          "name": "Milk"
+        }
+      },
+      {
+        "product": {
+          "amount": 5,
+          "unit": "grams",
+          "name": "Salt"
+        }
+      },
+      {
+        "product": {
+          "amount": 2,
+          "unit": "grams",
+          "name": "Black Pepper"
+        }
+      }
+    ],
+    "estimated_completion_time": 70
+  }
+]
