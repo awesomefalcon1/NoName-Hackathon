@@ -9,18 +9,8 @@ import Link from "next/link"
 import { db } from "@/lib/firebase"
 import { collection, getDocs, query, orderBy, type DocumentData, type QueryDocumentSnapshot } from "firebase/firestore"
 import { Loader2 } from "lucide-react"
-import ProtectedRoute from "@/components/protected-route" // Import ProtectedRoute
-
-interface Recipe {
-  id: string
-  name: string
-  userName: string
-  likes: number
-  imageUrl: string
-  shortSupply?: boolean
-  briefIngredients?: string
-  userId?: string
-}
+import ProtectedRoute from "@/components/protected-route"
+import type { Recipe } from "@/models"
 
 function RecipesPageContent() {
   const [recipes, setRecipes] = useState<Recipe[]>([])
@@ -59,7 +49,7 @@ function RecipesPageContent() {
 
   const filteredRecipes = recipes.filter(
     (recipe) =>
-      recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recipe.recipeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (recipe.briefIngredients && recipe.briefIngredients.toLowerCase().includes(searchTerm.toLowerCase())) ||
       recipe.userName.toLowerCase().includes(searchTerm.toLowerCase()),
   )
@@ -94,7 +84,7 @@ function RecipesPageContent() {
                 : "No recipes available yet. Be the first to upload!"}
             </p>
             {!searchTerm && (
-              <Button aschild className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black">
+              <Button asChild className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black">
                 <Link href="/upload">Upload a Recipe</Link>
               </Button>
             )}
@@ -112,7 +102,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         <div className="relative">
           <Image
             src={recipe.imageUrl || "/placeholder.svg"}
-            alt={recipe.name}
+            alt={recipe.recipeName}
             width={300}
             height={200}
             className="w-full h-48 object-cover"
@@ -125,7 +115,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
       <CardHeader className="pb-2">
         <Link href={`/recipes/${recipe.id}`}>
           <CardTitle className="text-lg hover:text-yellow-500 dark:hover:text-yellow-400 transition-colors">
-            {recipe.name}
+            {recipe.recipeName}
           </CardTitle>
         </Link>
         <p className="text-sm text-muted-foreground">By {recipe.userName}</p>

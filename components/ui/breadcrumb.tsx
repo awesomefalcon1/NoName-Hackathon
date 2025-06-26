@@ -42,10 +42,10 @@ BreadcrumbItem.displayName = "BreadcrumbItem"
 const BreadcrumbLink = React.forwardRef<
   HTMLAnchorElement,
   React.ComponentPropsWithoutRef<"a"> & {
-    aschild?: boolean
+    asChild?: boolean
   }
->(({ aschild, className, ...props }, ref) => {
-  const Comp = aschild ? Slot : "a"
+>(({ asChild, className, ...props }, ref) => {
+  const Comp = asChild ? Slot : "a"
 
   return (
     <Comp
