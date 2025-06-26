@@ -90,7 +90,7 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center space-x-3">
-          <Link href="/cart">
+          <Link href="/cart" asChild>
             <Button variant="ghost" size="icon" aria-label="Shopping Cart">
               <ShoppingCart className="h-5 w-5" />
             </Button>
@@ -106,7 +106,7 @@ export default function Navbar() {
               <span>Sign Out</span>
             </Button>
           ) : (
-            <Link href="/signin">
+            <Link href="/signin" asChild>
               <Button className="hidden sm:inline-flex bg-yellow-500 hover:bg-yellow-600 text-black">Sign In</Button>
             </Link>
           )}
