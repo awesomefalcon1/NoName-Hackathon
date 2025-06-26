@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, type FormEvent } from "react"
+
+import { useState, type FormEvent, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -12,20 +13,46 @@ import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
-import ProtectedRoute from "@/components/protected-route"
-import type { ClientIngredient, UploadRecipeResponse } from "@/models"
+import { storage, db } from "@/lib/firebase" // For Firebase storage and Firestore
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
 
-function UploadRecipePageContent() {
-  const { user, userProfile } = useAuth()
+interface Ingredient {
+  id: string
+  name: string
+  quantity: string
+  storeProduct?: StoreProduct // Matched store product
+}
+
+interface StoreProduct {
+  id: string
+  name: string
+  price: string
+  imageUrl: string
+}
+
+export default function UploadRecipePage() {
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upload a recipe.",
+        variant: "destructive",
+      })
+      router.push("/signin")
+    }
+  }, [user, authLoading, router])
 
   const [recipeName, setRecipeName] = useState("")
   const [recipeImage, setRecipeImage] = useState<File | null>(null)
   const [recipeImageUrl, setRecipeImageUrl] = useState<string | null>(null)
   const [briefIngredients, setBriefIngredients] = useState("")
   const [generatedRecipe, setGeneratedRecipe] = useState<string | null>(null)
-  const [extractedIngredients, setExtractedIngredients] = useState<ClientIngredient[]>([])
+  const [extractedIngredients, setExtractedIngredients] = useState<Ingredient[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isEditingRecipe, setIsEditingRecipe] = useState(false)
   const [editedRecipe, setEditedRecipe] = useState("")
@@ -33,28 +60,6 @@ function UploadRecipePageContent() {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0]
-
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast({
-          title: "Invalid File Type",
-          description: "Please select a valid image file.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Validate file size (5MB limit)
-      const maxFileSize = 5 * 1024 * 1024 // 5MB
-      if (file.size > maxFileSize) {
-        toast({
-          title: "File Too Large",
-          description: "Image file must be smaller than 5MB.",
-          variant: "destructive",
-        })
-        return
-      }
-
       setRecipeImage(file)
       setRecipeImageUrl(URL.createObjectURL(file))
     }
@@ -62,10 +67,12 @@ function UploadRecipePageContent() {
 
   const handleGenerateRecipe = async (e: FormEvent) => {
     e.preventDefault()
+
     if (!user) {
       toast({ title: "Not Authenticated", description: "Please sign in first.", variant: "destructive" })
       return
     }
+
     if (!recipeName || !recipeImage || !briefIngredients) {
       toast({
         title: "Missing Information",
@@ -74,24 +81,29 @@ function UploadRecipePageContent() {
       })
       return
     }
+
     setIsLoading(true)
+    // Simulate LLM call
     await new Promise((resolve) => setTimeout(resolve, 2000))
+
     const mockGeneratedRecipe = `
 1. Prepare your ingredients: ${briefIngredients}.
-2. Cook the main components.
-3. Combine all ingredients.
-4. Season to taste.
-5. Serve hot and enjoy your ${recipeName}!
-  `.trim()
+2. Cook the main components according to standard procedures. For example, if it's chicken, cook until no longer pink.
+3. Combine all ingredients in a large bowl or pot.
+4. Season to taste with salt, pepper, and any other desired spices.
+5. Serve hot and enjoy your delicious ${recipeName}!
+    `.trim()
     setGeneratedRecipe(mockGeneratedRecipe)
     setEditedRecipe(mockGeneratedRecipe)
-    const mockIngredients: ClientIngredient[] = briefIngredients.split(",").map((ing, index) => ({
+
+    const mockIngredients: Ingredient[] = briefIngredients.split(",").map((ing, index) => ({
       id: `ing-${index}-${Date.now()}`,
       name: ing.trim(),
-      quantity: "1 unit",
+      quantity: "1 unit", // Placeholder
       storeProduct:
         Math.random() > 0.3
           ? {
+              // Simulate some products found
               id: `prod-${index}-${Date.now()}`,
               name: `NoName ${ing.trim()}`,
               price: `\$${(Math.random() * 5 + 1).toFixed(2)}`,
@@ -100,18 +112,20 @@ function UploadRecipePageContent() {
           : undefined,
     }))
     setExtractedIngredients(mockIngredients)
+
     setIsLoading(false)
     toast({
       title: "Recipe Generated!",
-      description: "Review the recipe and ingredients below.",
+      description: "Review the recipe and ingredients below. You can edit them if needed.",
     })
   }
 
-  const handleEditIngredient = (id: string, field: keyof ClientIngredient, value: string) => {
+  const handleEditIngredient = (id: string, field: keyof Ingredient, value: string) => {
     setExtractedIngredients((prev) => prev.map((ing) => (ing.id === id ? { ...ing, [field]: value } : ing)))
   }
 
   const handleSwapIngredient = async (ingredientId: string) => {
+    // Simulate AI vector search for similar products
     toast({ title: "Swapping...", description: "Finding similar products..." })
     await new Promise((resolve) => setTimeout(resolve, 1500))
     setExtractedIngredients((prev) =>
@@ -146,105 +160,77 @@ function UploadRecipePageContent() {
       toast({ title: "Not Authenticated", description: "Please sign in first.", variant: "destructive" })
       return
     }
-    if (!recipeImage || !editedRecipe || extractedIngredients.length === 0 || !recipeName) {
+    if (!recipeImage || !generatedRecipe || extractedIngredients.length === 0) {
       toast({
         title: "Incomplete Recipe",
-        description: "Ensure recipe name, image, recipe steps, and ingredients are set.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Validate ingredients
-    const invalidIngredients = extractedIngredients.filter((ing) => !ing.name.trim() || !ing.quantity.trim())
-    if (invalidIngredients.length > 0) {
-      toast({
-        title: "Invalid Ingredients",
-        description: "Please ensure all ingredients have both name and quantity.",
+        description: "Ensure image, recipe steps, and ingredients are set.",
         variant: "destructive",
       })
       return
     }
 
     setIsLoading(true)
+    try {
+      // 1. Upload image to Firebase Storage
+      const imageRef = ref(storage, `recipeImages/${user.uid}/${Date.now()}_${recipeImage.name}`)
+      const snapshot = await uploadBytes(imageRef, recipeImage)
+      const imageUrl = await getDownloadURL(snapshot.ref)
 
-    const formData = new FormData()
-    // No need to send userId or userName explicitly in FormData if Cloud Function verifies token
-    // and extracts it from there. However, for simplicity and if you want to explicitly pass,
-    // you can keep them. The Cloud Function example uses decodedToken.uid.
-    // formData.append("userId", user.uid);
-    // formData.append("userName", userProfile?.firstName ? `${userProfile.firstName} ${userProfile.lastName || ""}`.trim() : user.email || "Anonymous Chef");
-
-    formData.append("recipeName", recipeName)
-    formData.append("briefIngredients", briefIngredients)
-    formData.append("fullRecipe", editedRecipe)
-    formData.append(
-      "ingredients",
-      JSON.stringify(
-        extractedIngredients.map((ing) => ({
+      // 2. Prepare recipe data for Firestore
+      const recipeData = {
+        userId: user.uid,
+        userName: user.displayName || user.email, // Or use profile name from AuthContext
+        recipeName,
+        briefIngredients, // Store the original brief ingredients
+        fullRecipe: editedRecipe, // Store the (potentially edited) full recipe
+        ingredients: extractedIngredients.map((ing) => ({
+          // Store structured ingredients
           name: ing.name,
           quantity: ing.quantity,
-          storeProductId: ing.storeProduct?.id || null,
+          storeProductId: ing.storeProduct?.id || null, // Link to store product if matched
           storeProductName: ing.storeProduct?.name || null,
-          storeProductPrice: ing.storeProduct?.price || null,
-          storeProductImageUrl: ing.storeProduct?.imageUrl || null,
         })),
-      ),
-    )
-    formData.append("recipeImage", recipeImage)
-
-    try {
-      // Get the Firebase ID token for authentication
-      const idToken = await user.getIdToken()
-
-      // Replace with your actual Firebase Cloud Function URL
-      // You can find this in your Firebase console under Functions -> Dashboard
-      // It will look something like: https://REGION-PROJECT_ID.cloudfunctions.net/uploadRecipe
-      const cloudFunctionUrl = "YOUR_FIREBASE_CLOUD_FUNCTION_URL/uploadRecipe" // <<< IMPORTANT: Update this URL
-
-      const response = await fetch(cloudFunctionUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`, // Send the ID token for authentication
-        },
-        body: formData,
-      })
-
-      const result: UploadRecipeResponse = await response.json()
-
-      if (!result.success) {
-        throw new Error(result.error || result.message || "Upload failed")
+        imageUrl,
+        createdAt: serverTimestamp(),
+        likes: 0,
+        // comments: [], // You might want an array or subcollection for comments
       }
+
+      // 3. Add recipe to Firestore
+      const docRef = await addDoc(collection(db, "recipes"), recipeData)
 
       setIsLoading(false)
       toast({
-        title: "Recipe Submitted Successfully!",
-        description: `Your recipe "${recipeName}" is now live! Recipe ID: ${result.recipeId}`,
+        title: "Recipe Submitted!",
+        description: `Your recipe "${recipeName}" is now live! Doc ID: ${docRef.id}`,
         variant: "success",
       })
-
-      // Reset form
+      // Reset form or redirect
       setRecipeName("")
       setRecipeImage(null)
       setRecipeImageUrl(null)
       setBriefIngredients("")
       setGeneratedRecipe(null)
-      setEditedRecipe("")
       setExtractedIngredients([])
       setIsEditingRecipe(false)
-
-      if (result.recipeId) {
-        router.push(`/recipes/${result.recipeId}`)
-      }
+      router.push(`/recipes/${docRef.id}`) // Optionally redirect to the new recipe page
     } catch (error) {
       setIsLoading(false)
-      console.error("Error submitting recipe via Cloud Function:", error)
+      console.error("Error submitting recipe:", error)
       toast({
         title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Could not submit your recipe. Please try again.",
+        description: "Could not submit your recipe. Please try again.",
         variant: "destructive",
       })
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-4rem)]">
+        <Loader2 className="h-12 w-12 animate-spin text-yellow-500" />
+      </div>
+    )
   }
 
   return (
@@ -269,12 +255,10 @@ function UploadRecipePageContent() {
                 required
               />
             </div>
+
             <div>
               <Label htmlFor="recipeImage">Recipe Image</Label>
               <Input id="recipeImage" type="file" accept="image/*" onChange={handleImageUpload} required />
-              <p className="text-xs text-muted-foreground mt-1">
-                Maximum file size: 5MB. Supported formats: JPG, PNG, GIF, WebP
-              </p>
               {recipeImageUrl && (
                 <div className="mt-2">
                   <Image
@@ -287,6 +271,7 @@ function UploadRecipePageContent() {
                 </div>
               )}
             </div>
+
             <div>
               <Label htmlFor="briefIngredients">Brief Ingredients</Label>
               <Textarea
@@ -299,6 +284,7 @@ function UploadRecipePageContent() {
               />
               <p className="text-xs text-muted-foreground mt-1">Comma-separated list of main ingredients.</p>
             </div>
+
             <Button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" disabled={isLoading}>
               {isLoading && !generatedRecipe ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -334,6 +320,7 @@ function UploadRecipePageContent() {
                   </div>
                 )}
               </div>
+
               <div>
                 <h3 className="text-lg font-semibold mb-2 flex items-center">
                   <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
@@ -411,6 +398,7 @@ function UploadRecipePageContent() {
                   </Button>
                 </div>
               </div>
+
               <Button
                 onClick={handleSubmitRecipe}
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -428,13 +416,5 @@ function UploadRecipePageContent() {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-export default function UploadRecipePage() {
-  return (
-    <ProtectedRoute message="Please sign in to upload a recipe.">
-      <UploadRecipePageContent />
-    </ProtectedRoute>
   )
 }

@@ -1,4 +1,4 @@
-"use client"
+"use client" // Add this at the top
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,10 +9,79 @@ import Link from "next/link"
 import { db } from "@/lib/firebase"
 import { collection, getDocs, query, orderBy, type DocumentData, type QueryDocumentSnapshot } from "firebase/firestore"
 import { Loader2 } from "lucide-react"
-import ProtectedRoute from "@/components/protected-route"
-import type { Recipe } from "@/models"
 
-function RecipesPageContent() {
+// Mock data for recipes
+// const mockRecipes = [
+//   {
+//     id: "1",
+//     name: "Spicy Chicken Pasta",
+//     user: "ChefAnna",
+//     likes: 120,
+//     comments: 15,
+//     imageUrl: "/placeholder.svg?width=300&height=200&text=Pasta",
+//     shortSupply: true,
+//   },
+//   {
+//     id: "2",
+//     name: "Vegan Lentil Soup",
+//     user: "GreenEats",
+//     likes: 250,
+//     comments: 30,
+//     imageUrl: "/placeholder.svg?width=300&height=200&text=Soup",
+//     shortSupply: false,
+//   },
+//   {
+//     id: "3",
+//     name: "Quick Beef Stir-fry",
+//     user: "FastMeals",
+//     likes: 85,
+//     comments: 10,
+//     imageUrl: "/placeholder.svg?width=300&height=200&text=Stir-fry",
+//     shortSupply: false,
+//   },
+//   {
+//     id: "4",
+//     name: "Berry Smoothie Bowl",
+//     user: "HealthyLife",
+//     likes: 300,
+//     comments: 45,
+//     imageUrl: "/placeholder.svg?width=300&height=200&text=Smoothie",
+//     shortSupply: true,
+//   },
+//   {
+//     id: "5",
+//     name: "Homemade Pizza",
+//     user: "PizzaMaster",
+//     likes: 180,
+//     comments: 22,
+//     imageUrl: "/placeholder.svg?width=300&height=200&text=Pizza",
+//     shortSupply: false,
+//   },
+//   {
+//     id: "6",
+//     name: "Chocolate Chip Cookies",
+//     user: "SweetTooth",
+//     likes: 450,
+//     comments: 60,
+//     imageUrl: "/placeholder.svg?width=300&height=200&text=Cookies",
+//     shortSupply: false,
+//   },
+// ]
+
+interface Recipe {
+  id: string
+  name: string
+  userName: string // Assuming you store userName or userId
+  likes: number
+  // commentsCount: number; // Assuming you might have this
+  imageUrl: string
+  shortSupply?: boolean // If you have this logic
+  // Add other fields as per your Firestore structure
+  briefIngredients?: string
+  userId?: string
+}
+
+export default function RecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -22,7 +91,7 @@ function RecipesPageContent() {
       setIsLoading(true)
       try {
         const recipesCollection = collection(db, "recipes")
-        const q = query(recipesCollection, orderBy("createdAt", "desc"))
+        const q = query(recipesCollection, orderBy("createdAt", "desc")) // Order by creation time
         const querySnapshot = await getDocs(q)
         const recipesData = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
           id: doc.id,
@@ -31,6 +100,7 @@ function RecipesPageContent() {
         setRecipes(recipesData)
       } catch (error) {
         console.error("Error fetching recipes:", error)
+        // Handle error (e.g., show a toast message)
       } finally {
         setIsLoading(false)
       }
@@ -41,15 +111,15 @@ function RecipesPageContent() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-12rem)]">
-        <Loader2 className="h-10 w-10 animate-spin text-yellow-500" />
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-8rem)]">
+        <Loader2 className="h-12 w-12 animate-spin text-yellow-500" />
       </div>
     )
   }
 
   const filteredRecipes = recipes.filter(
     (recipe) =>
-      recipe.recipeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (recipe.briefIngredients && recipe.briefIngredients.toLowerCase().includes(searchTerm.toLowerCase())) ||
       recipe.userName.toLowerCase().includes(searchTerm.toLowerCase()),
   )
@@ -71,6 +141,9 @@ function RecipesPageContent() {
           </Button>
         </div>
       </div>
+
+      {/* Categories or Filters could go here */}
+      {/* <div className="mb-8 flex space-x-2"> ...filter buttons... </div> */}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredRecipes.map((recipe) => (
@@ -102,7 +175,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         <div className="relative">
           <Image
             src={recipe.imageUrl || "/placeholder.svg"}
-            alt={recipe.recipeName}
+            alt={recipe.name}
             width={300}
             height={200}
             className="w-full h-48 object-cover"
@@ -115,17 +188,20 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
       <CardHeader className="pb-2">
         <Link href={`/recipes/${recipe.id}`}>
           <CardTitle className="text-lg hover:text-yellow-500 dark:hover:text-yellow-400 transition-colors">
-            {recipe.recipeName}
+            {recipe.name}
           </CardTitle>
         </Link>
         <p className="text-sm text-muted-foreground">By {recipe.userName}</p>
       </CardHeader>
-      <CardContent className="pb-4"></CardContent>
+      <CardContent className="pb-4">{/* Could add a short description or tags here */}</CardContent>
       <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="sm" className="px-2">
             <Heart className="h-4 w-4 mr-1" /> {recipe.likes}
           </Button>
+          {/* <Button variant="ghost" size="sm" className="px-2">
+            <MessageCircle className="h-4 w-4 mr-1" /> {recipe.commentsCount || 0}
+          </Button> */}
         </div>
         <Button
           variant="outline"
@@ -136,13 +212,5 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         </Button>
       </CardFooter>
     </Card>
-  )
-}
-
-export default function RecipesPage() {
-  return (
-    <ProtectedRoute message="Please sign in to view recipes.">
-      <RecipesPageContent />
-    </ProtectedRoute>
   )
 }
