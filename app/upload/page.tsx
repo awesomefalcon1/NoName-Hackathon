@@ -12,9 +12,6 @@ import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
-import { storage, db } from "@/lib/firebase"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { collection, addDoc, serverTimestamp } from "firebase/firestore"
 import ProtectedRoute from "@/components/protected-route" // Import ProtectedRoute
 
 interface Ingredient {
@@ -32,7 +29,7 @@ interface StoreProduct {
 }
 
 function UploadRecipePageContent() {
-  const { user } = useAuth() // authLoading is handled by ProtectedRoute
+  const { user, userProfile } = useAuth() // authLoading is handled by ProtectedRoute
   const router = useRouter()
   const { toast } = useToast()
 
@@ -76,7 +73,7 @@ function UploadRecipePageContent() {
 3. Combine all ingredients.
 4. Season to taste.
 5. Serve hot and enjoy your ${recipeName}!
-    `.trim()
+  `.trim()
     setGeneratedRecipe(mockGeneratedRecipe)
     setEditedRecipe(mockGeneratedRecipe)
     const mockIngredients: Ingredient[] = briefIngredients.split(",").map((ing, index) => ({
@@ -140,56 +137,79 @@ function UploadRecipePageContent() {
       toast({ title: "Not Authenticated", description: "Please sign in first.", variant: "destructive" })
       return
     }
-    if (!recipeImage || !generatedRecipe || extractedIngredients.length === 0) {
+    if (!recipeImage || !editedRecipe || extractedIngredients.length === 0 || !recipeName) {
       toast({
         title: "Incomplete Recipe",
-        description: "Ensure image, recipe steps, and ingredients are set.",
+        description: "Ensure recipe name, image, recipe steps, and ingredients are set.",
         variant: "destructive",
       })
       return
     }
+
     setIsLoading(true)
-    try {
-      const imageRef = ref(storage, `recipeImages/${user.uid}/${Date.now()}_${recipeImage.name}`)
-      const snapshot = await uploadBytes(imageRef, recipeImage)
-      const imageUrl = await getDownloadURL(snapshot.ref)
-      const recipeData = {
-        userId: user.uid,
-        userName: user.displayName || user.email,
-        recipeName,
-        briefIngredients,
-        fullRecipe: editedRecipe,
-        ingredients: extractedIngredients.map((ing) => ({
+
+    const formData = new FormData()
+    formData.append("userId", user.uid)
+    formData.append(
+      "userName",
+      userProfile?.firstName
+        ? `${userProfile.firstName} ${userProfile.lastName || ""}`.trim()
+        : user.email || "Anonymous Chef",
+    )
+    formData.append("recipeName", recipeName)
+    formData.append("briefIngredients", briefIngredients) // Send original brief ingredients
+    formData.append("fullRecipe", editedRecipe) // Send the (potentially edited) full recipe steps
+    formData.append(
+      "ingredients",
+      JSON.stringify(
+        extractedIngredients.map((ing) => ({
           name: ing.name,
           quantity: ing.quantity,
           storeProductId: ing.storeProduct?.id || null,
           storeProductName: ing.storeProduct?.name || null,
+          storeProductPrice: ing.storeProduct?.price || null,
+          storeProductImageUrl: ing.storeProduct?.imageUrl || null,
         })),
-        imageUrl,
-        createdAt: serverTimestamp(),
-        likes: 0,
+      ),
+    )
+    formData.append("recipeImage", recipeImage)
+
+    try {
+      const response = await fetch("/api/uploadrecipe", {
+        method: "POST",
+        body: formData,
+        // Headers are not typically needed for FormData with fetch, browser sets Content-Type
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || `API Error: ${response.statusText}`)
       }
-      const docRef = await addDoc(collection(db, "recipes"), recipeData)
+
       setIsLoading(false)
       toast({
-        title: "Recipe Submitted!",
-        description: `Your recipe "${recipeName}" is now live!`,
+        title: "Recipe Submitted via API!",
+        description: `Your recipe "${recipeName}" is now live! Recipe ID: ${result.recipeId}`,
         variant: "success",
       })
+
+      // Reset form
       setRecipeName("")
       setRecipeImage(null)
       setRecipeImageUrl(null)
       setBriefIngredients("")
-      setGeneratedRecipe(null)
+      setGeneratedRecipe(null) // Also reset the AI generated part
+      setEditedRecipe("")
       setExtractedIngredients([])
       setIsEditingRecipe(false)
-      router.push(`/recipes/${docRef.id}`)
+      router.push(`/recipes/${result.recipeId}`) // Optionally redirect
     } catch (error) {
       setIsLoading(false)
-      console.error("Error submitting recipe:", error)
+      console.error("Error submitting recipe via API:", error)
       toast({
         title: "Submission Failed",
-        description: "Could not submit your recipe. Please try again.",
+        description: error instanceof Error ? error.message : "Could not submit your recipe. Please try again.",
         variant: "destructive",
       })
     }
