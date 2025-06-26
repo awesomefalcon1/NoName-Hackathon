@@ -601,6 +601,71 @@ export default function ProfilePage() {
                   </Card>
                 ))}
               </div>
+              {/* Suggested Recipes Section */}
+              <div className="mt-8 pt-6 border-t">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recipes You May Like</h3>
+                  <Link href="/recipes">
+                    <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700">
+                      View All
+                    </Button>
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    {
+                      id: "s1",
+                      name: "Mediterranean Quinoa Bowl",
+                      author: "HealthyEats",
+                      imageUrl: "/placeholder.svg?height=120&width=120",
+                      likes: 89,
+                    },
+                    {
+                      id: "s2",
+                      name: "Creamy Mushroom Risotto",
+                      author: "ItalianChef",
+                      imageUrl: "/placeholder.svg?height=120&width=120",
+                      likes: 156,
+                    },
+                    {
+                      id: "s3",
+                      name: "Asian Fusion Stir Fry",
+                      author: "WokMaster",
+                      imageUrl: "/placeholder.svg?height=120&width=120",
+                      likes: 203,
+                    },
+                    {
+                      id: "s4",
+                      name: "Chocolate Lava Cake",
+                      author: "DessertQueen",
+                      imageUrl: "/placeholder.svg?height=120&width=120",
+                      likes: 312,
+                    },
+                  ].map((recipe) => (
+                    <Card key={recipe.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                      <Link href={`/recipes/${recipe.id}`}>
+                        <Image
+                          src={recipe.imageUrl || "/placeholder.svg"}
+                          alt={recipe.name}
+                          width={120}
+                          height={120}
+                          className="w-full h-24 object-cover"
+                        />
+                        <CardContent className="p-3">
+                          <h4 className="font-medium text-sm mb-1 line-clamp-2">{recipe.name}</h4>
+                          <div className="flex justify-between items-center text-xs text-gray-500">
+                            <span>By {recipe.author}</span>
+                            <span className="flex items-center">
+                              <Heart className="h-3 w-3 mr-1 text-red-400" />
+                              {recipe.likes}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Link>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
