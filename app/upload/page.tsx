@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { UploadCloud, Wand2, Edit3, CheckCircle, AlertTriangle, Loader2, PlusCircle, Trash2 } from "lucide-react"
+import { UploadCloud, Wand2, Edit3, CheckCircle, AlertTriangle, Loader2, PlusCircle, Trash2, Clock, ChefHat, Globe, Leaf } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
 import { useAuth } from "@/context/auth-context"
@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation"
 import { storage, db } from "@/lib/firebase" // For Firebase storage and Firestore
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { aiService, type AIRecipeAnalysis, type AIIngredient, type AIProductMatch } from "@/lib/ai-service"
 
 interface Ingredient {
   id: string
@@ -36,16 +37,10 @@ export default function UploadRecipePage() {
   const router = useRouter()
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to upload a recipe.",
-        variant: "destructive",
-      })
-      router.push("/signin")
-    }
-  }, [user, authLoading, router])
+  const devMode = process.env.NEXT_PUBLIC_DEV_MODE === "true";
+  if (devMode) {
+    // skip auth checks or set a mock user
+  }
 
   const [recipeName, setRecipeName] = useState("")
   const [recipeImage, setRecipeImage] = useState<File | null>(null)
@@ -56,6 +51,9 @@ export default function UploadRecipePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isEditingRecipe, setIsEditingRecipe] = useState(false)
   const [editedRecipe, setEditedRecipe] = useState("")
+  
+  // New state for AI analysis
+  const [aiAnalysis, setAiAnalysis] = useState<AIRecipeAnalysis | null>(null)
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -83,41 +81,71 @@ export default function UploadRecipePage() {
     }
 
     setIsLoading(true)
-    // Simulate LLM call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    
+    try {
+      // Use AI service to analyze ingredients and generate recipe
+      const analysis = await aiService.analyzeIngredients(briefIngredients, recipeName)
+      setAiAnalysis(analysis)
 
-    const mockGeneratedRecipe = `
-1. Prepare your ingredients: ${briefIngredients}.
-2. Cook the main components according to standard procedures. For example, if it's chicken, cook until no longer pink.
-3. Combine all ingredients in a large bowl or pot.
-4. Season to taste with salt, pepper, and any other desired spices.
-5. Serve hot and enjoy your delicious ${recipeName}!
-    `.trim()
-    setGeneratedRecipe(mockGeneratedRecipe)
-    setEditedRecipe(mockGeneratedRecipe)
+      // Generate recipe using AI analysis
+      const aiGeneratedRecipe = generateRecipeFromAnalysis(analysis, recipeName)
+      setGeneratedRecipe(aiGeneratedRecipe)
+      setEditedRecipe(aiGeneratedRecipe)
 
-    const mockIngredients: Ingredient[] = briefIngredients.split(",").map((ing, index) => ({
-      id: `ing-${index}-${Date.now()}`,
-      name: ing.trim(),
-      quantity: "1 unit", // Placeholder
-      storeProduct:
-        Math.random() > 0.3
-          ? {
-              // Simulate some products found
-              id: `prod-${index}-${Date.now()}`,
-              name: `NoName ${ing.trim()}`,
-              price: `\$${(Math.random() * 5 + 1).toFixed(2)}`,
-              imageUrl: `/placeholder.svg?width=50&height=50&text=${ing.trim().charAt(0)}`,
-            }
-          : undefined,
-    }))
-    setExtractedIngredients(mockIngredients)
+      // Convert AI ingredients to our format
+      const ingredients: Ingredient[] = analysis.ingredients.map((aiIng, index) => ({
+        id: `ing-${index}-${Date.now()}`,
+        name: aiIng.name,
+        quantity: `${aiIng.quantity} ${aiIng.unit}`,
+        storeProduct: analysis.productMatches.find(match => match.category === aiIng.category) ? {
+          id: analysis.productMatches.find(match => match.category === aiIng.category)!.id,
+          name: analysis.productMatches.find(match => match.category === aiIng.category)!.name,
+          price: analysis.productMatches.find(match => match.category === aiIng.category)!.price,
+          imageUrl: analysis.productMatches.find(match => match.category === aiIng.category)!.imageUrl,
+        } : undefined,
+      }))
+      
+      setExtractedIngredients(ingredients)
 
-    setIsLoading(false)
-    toast({
-      title: "Recipe Generated!",
-      description: "Review the recipe and ingredients below. You can edit them if needed.",
+      toast({
+        title: "AI Recipe Generated!",
+        description: "Our AI has analyzed your ingredients and generated a smart recipe with product matches.",
+      })
+    } catch (error) {
+      console.error("Error generating recipe:", error)
+      toast({
+        title: "Generation Failed",
+        description: "Could not generate recipe. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const generateRecipeFromAnalysis = (analysis: AIRecipeAnalysis, recipeName: string): string => {
+    const { ingredients, cookingTime, difficulty, cuisine, dietaryInfo } = analysis
+    
+    let recipe = `# ${recipeName}\n\n`
+    recipe += `**Cuisine:** ${cuisine} | **Difficulty:** ${difficulty} | **Time:** ${cookingTime}\n`
+    
+    if (dietaryInfo.length > 0) {
+      recipe += `**Dietary:** ${dietaryInfo.join(', ')}\n\n`
+    }
+    
+    recipe += `## Ingredients\n`
+    ingredients.forEach(ing => {
+      recipe += `- ${ing.quantity} ${ing.unit} ${ing.name} (${ing.category})\n`
     })
+    
+    recipe += `\n## Instructions\n`
+    recipe += `1. Prepare all ingredients as listed above.\n`
+    recipe += `2. Follow standard cooking procedures for ${cuisine.toLowerCase()} cuisine.\n`
+    recipe += `3. Cook for approximately ${cookingTime}.\n`
+    recipe += `4. Season to taste and serve hot.\n\n`
+    recipe += `**Tip:** This ${difficulty.toLowerCase()} recipe is perfect for ${cuisine.toLowerCase()} cuisine lovers!`
+    
+    return recipe
   }
 
   const handleEditIngredient = (id: string, field: keyof Ingredient, value: string) => {
@@ -144,7 +172,7 @@ export default function UploadRecipePage() {
         return ing
       }),
     )
-    toast({ title: "Ingredient Swapped!", variant: "success" })
+    toast({ title: "Ingredient Swapped!", variant: "default" })
   }
 
   const handleRemoveIngredient = (id: string) => {
@@ -203,7 +231,7 @@ export default function UploadRecipePage() {
       toast({
         title: "Recipe Submitted!",
         description: `Your recipe "${recipeName}" is now live! Doc ID: ${docRef.id}`,
-        variant: "success",
+        variant: "default",
       })
       // Reset form or redirect
       setRecipeName("")
@@ -224,6 +252,17 @@ export default function UploadRecipePage() {
       })
     }
   }
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upload a recipe.",
+        variant: "destructive",
+      })
+      router.push("/signin")
+    }
+  }, [user, authLoading, router])
 
   if (authLoading) {
     return (
@@ -297,6 +336,51 @@ export default function UploadRecipePage() {
 
           {generatedRecipe && (
             <div className="space-y-6 pt-6 border-t dark:border-neutral-700">
+              {/* AI Analysis Summary */}
+              {aiAnalysis && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <Wand2 className="w-5 h-5 mr-2 text-yellow-600" />
+                    AI Analysis Summary
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-4 h-4 text-blue-500" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Cooking Time</p>
+                        <p className="font-medium">{aiAnalysis.cookingTime}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <ChefHat className="w-4 h-4 text-green-500" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Difficulty</p>
+                        <p className="font-medium">{aiAnalysis.difficulty}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Globe className="w-4 h-4 text-purple-500" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Cuisine</p>
+                        <p className="font-medium">{aiAnalysis.cuisine}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Leaf className="w-4 h-4 text-emerald-500" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Dietary</p>
+                        <p className="font-medium">
+                          {aiAnalysis.dietaryInfo.length > 0 
+                            ? aiAnalysis.dietaryInfo.join(', ') 
+                            : 'Standard'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-lg font-semibold flex items-center">
@@ -324,70 +408,81 @@ export default function UploadRecipePage() {
               <div>
                 <h3 className="text-lg font-semibold mb-2 flex items-center">
                   <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
-                  Extracted Ingredients
+                  AI-Enhanced Ingredients
                 </h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Review and edit the ingredients. Our AI tried to match them with NoName products.
+                  Our AI has intelligently parsed your ingredients and matched them with NoName products.
                 </p>
                 <div className="space-y-3">
-                  {extractedIngredients.map((ing) => (
-                    <Card key={ing.id} className="p-3 bg-gray-50 dark:bg-neutral-700/50">
-                      <div className="flex flex-col sm:flex-row gap-2 items-start">
-                        <div className="flex-grow space-y-1">
-                          <Input
-                            value={ing.name}
-                            onChange={(e) => handleEditIngredient(ing.id, "name", e.target.value)}
-                            placeholder="Ingredient Name"
-                            className="text-sm"
-                          />
-                          <Input
-                            value={ing.quantity}
-                            onChange={(e) => handleEditIngredient(ing.id, "quantity", e.target.value)}
-                            placeholder="Quantity (e.g. 2 cups)"
-                            className="text-sm"
-                          />
-                        </div>
-                        <div className="sm:w-48 flex-shrink-0">
-                          {ing.storeProduct ? (
-                            <div className="flex items-center space-x-2 p-2 border dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800">
-                              <Image
-                                src={ing.storeProduct.imageUrl || "/placeholder.svg"}
-                                alt={ing.storeProduct.name}
-                                width={30}
-                                height={30}
-                                className="rounded"
-                              />
-                              <div className="text-xs">
-                                <p className="font-medium">{ing.storeProduct.name}</p>
-                                <p className="text-muted-foreground">{ing.storeProduct.price}</p>
+                  {extractedIngredients.map((ing) => {
+                    const aiIngredient = aiAnalysis?.ingredients.find(ai => ai.name === ing.name)
+                    return (
+                      <Card key={ing.id} className="p-3 bg-gray-50 dark:bg-neutral-700/50">
+                        <div className="flex flex-col sm:flex-row gap-2 items-start">
+                          <div className="flex-grow space-y-1">
+                            <Input
+                              value={ing.name}
+                              onChange={(e) => handleEditIngredient(ing.id, "name", e.target.value)}
+                              placeholder="Ingredient Name"
+                              className="text-sm"
+                            />
+                            <Input
+                              value={ing.quantity}
+                              onChange={(e) => handleEditIngredient(ing.id, "quantity", e.target.value)}
+                              placeholder="Quantity (e.g. 2 cups)"
+                              className="text-sm"
+                            />
+                            {aiIngredient && (
+                              <div className="text-xs text-muted-foreground">
+                                <span className="inline-block bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-2 py-1 rounded mr-2">
+                                  {aiIngredient.category}
+                                </span>
+                                <span>{aiIngredient.description}</span>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center space-x-2 p-2 border border-dashed dark:border-neutral-600 rounded-md text-xs text-muted-foreground">
-                              <AlertTriangle className="w-4 h-4 text-orange-400" />
-                              <span>No match found</span>
-                            </div>
-                          )}
+                            )}
+                          </div>
+                          <div className="sm:w-48 flex-shrink-0">
+                            {ing.storeProduct ? (
+                              <div className="flex items-center space-x-2 p-2 border dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800">
+                                <Image
+                                  src={ing.storeProduct.imageUrl || "/placeholder.svg"}
+                                  alt={ing.storeProduct.name}
+                                  width={30}
+                                  height={30}
+                                  className="rounded"
+                                />
+                                <div className="text-xs">
+                                  <p className="font-medium">{ing.storeProduct.name}</p>
+                                  <p className="text-muted-foreground">{ing.storeProduct.price}</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2 p-2 border border-dashed dark:border-neutral-600 rounded-md text-xs text-muted-foreground">
+                                <AlertTriangle className="w-4 h-4 text-orange-400" />
+                                <span>No match found</span>
+                              </div>
+                            )}
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => handleSwapIngredient(ing.id)}
+                              className="text-xs text-yellow-600 dark:text-yellow-500 p-1"
+                            >
+                              Swap Product
+                            </Button>
+                          </div>
                           <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => handleSwapIngredient(ing.id)}
-                            className="text-xs text-yellow-600 dark:text-yellow-500 p-1"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveIngredient(ing.id)}
+                            className="text-red-500 hover:text-red-600 flex-shrink-0"
                           >
-                            Swap Product
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveIngredient(ing.id)}
-                          className="text-red-500 hover:text-red-600 flex-shrink-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    )
+                  })}
                   <Button
                     variant="outline"
                     size="sm"
