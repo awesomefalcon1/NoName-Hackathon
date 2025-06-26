@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect, type FormEvent } from "react"
+import type React from "react"
+
+import { useState, useEffect, useRef, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -33,7 +35,7 @@ import { useRouter } from "next/navigation"
 import ProtectedRoute from "@/components/protected-route"
 import { doc, updateDoc, collection, query, where, getDocs, orderBy } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import type { Recipe } from "@/models"
+import type { Recipe, UploadProfilePictureResponse } from "@/models"
 
 interface UserStats {
   recipesUploaded: number
@@ -46,6 +48,7 @@ function ProfilePageContent() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Profile editing state
   const [isEditing, setIsEditing] = useState(false)
@@ -54,6 +57,10 @@ function ProfilePageContent() {
     lastName: userProfile?.lastName || "",
     email: userProfile?.email || "",
   })
+
+  // Profile picture state
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [currentPhotoURL, setCurrentPhotoURL] = useState<string | null>(null)
 
   // User stats and recipes
   const [userStats, setUserStats] = useState<UserStats>({
@@ -89,6 +96,9 @@ function ProfilePageContent() {
         lastName: userProfile.lastName || "",
         email: userProfile.email || "",
       })
+
+      // Set current photo URL
+      setCurrentPhotoURL(userProfile.photoURL || user?.photoURL || null)
 
       // Set join date from user creation
       if (user?.metadata?.creationTime) {
@@ -200,6 +210,88 @@ function ProfilePageContent() {
     setIsEditing(false)
   }
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || !event.target.files[0] || !user) return
+
+    const file = event.target.files[0]
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select a valid image file (JPG, PNG, GIF, WebP).",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate file size (5MB limit)
+    const maxFileSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxFileSize) {
+      toast({
+        title: "File Too Large",
+        description: "Profile picture must be smaller than 5MB.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUploadingPhoto(true)
+
+    try {
+      // Get user's ID token for authentication
+      const idToken = await user.getIdToken()
+
+      // Create form data
+      const formData = new FormData()
+      formData.append("profilePicture", file)
+      formData.append("userId", user.uid)
+
+      // Upload to our API
+      const response = await fetch("/api/upload-profile-picture", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: formData,
+      })
+
+      const result: UploadProfilePictureResponse = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to upload profile picture")
+      }
+
+      // Update local state with new photo URL
+      setCurrentPhotoURL(result.photoURL || null)
+
+      toast({
+        title: "Profile Picture Updated",
+        description: "Your profile picture has been updated successfully!",
+        variant: "success",
+      })
+
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    } catch (error) {
+      console.error("Error uploading profile picture:", error)
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Could not upload profile picture. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploadingPhoto(false)
+    }
+  }
+
+  const handleCameraClick = () => {
+    fileInputRef.current?.click()
+  }
+
   const getInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase() || "U"
   }
@@ -213,7 +305,7 @@ function ProfilePageContent() {
             <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
               <div className="relative">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={user?.photoURL || ""} alt="Profile picture" />
+                  <AvatarImage src={currentPhotoURL || ""} alt="Profile picture" />
                   <AvatarFallback className="text-2xl bg-yellow-500 text-black">
                     {getInitials(userProfile?.firstName, userProfile?.lastName)}
                   </AvatarFallback>
@@ -221,10 +313,19 @@ function ProfilePageContent() {
                 <Button
                   size="icon"
                   variant="outline"
-                  className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-transparent"
+                  className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-white dark:bg-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-700"
+                  onClick={handleCameraClick}
+                  disabled={isUploadingPhoto}
                 >
-                  <Camera className="w-4 h-4" />
+                  {isUploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
               </div>
 
               <div className="flex-1 text-center md:text-left">

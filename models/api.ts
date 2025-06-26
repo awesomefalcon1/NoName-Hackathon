@@ -93,3 +93,14 @@ export interface RequestValidator<T> {
   validate(data: unknown): ValidationResult<T>
   validateField(field: keyof T, value: unknown): ValidationError | null
 }
+
+// Profile picture upload types
+export interface UploadProfilePictureRequest {
+  userId: string
+  profilePicture: File
+}
+
+export interface UploadProfilePictureResponse extends ApiResponse {
+  photoURL?: string
+  photoPath?: string
+}

@@ -7,6 +7,7 @@ export interface UserProfile {
   lastName?: string
   displayName?: string
   photoURL?: string
+  photoPath?: string // Path in Firebase Storage for cleanup
   createdAt?: Date | FirebaseTimestamp
   updatedAt?: Date | FirebaseTimestamp
   preferences?: UserPreferences
