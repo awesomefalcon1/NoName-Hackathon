@@ -104,3 +104,57 @@ export interface UploadProfilePictureResponse extends ApiResponse {
   photoURL?: string
   photoPath?: string
 }
+
+// Complete recipe upload types (updated for local storage)
+export interface UploadRecipeCompleteRequest {
+  name: string
+  description: string
+  image: File
+  userId?: string
+}
+
+export interface UploadRecipeCompleteResponse extends ApiResponse {
+  data?: {
+    documentId: string
+    imageURL: string
+    imageKey: string // The local file path/key
+    name: string
+    description: string
+    localFilePath?: string // Full local file path
+  }
+  details?: string
+}
+
+// Local JSON record structure (updated from Firestore)
+export interface FirestoreRecord {
+  id: string // Unique identifier
+  name: string
+  imageURL: string
+  imageKey: string // Relative path for reference
+  description: string
+  createdAt: string // ISO string instead of Firestore timestamp
+  userId?: string
+  metadata?: {
+    originalFileName: string
+    fileSize: number
+    contentType: string
+    uploadTimestamp: number
+    localFilePath?: string // Full local file system path
+  }
+}
+
+// Get recipes response
+export interface GetRecipesResponse extends ApiResponse {
+  data?: FirestoreRecord[]
+  pagination?: {
+    total: number
+    limit: number
+    offset: number
+    hasMore: boolean
+  }
+}
+
+// Get single recipe response
+export interface GetRecipeResponse extends ApiResponse {
+  data?: FirestoreRecord
+}
