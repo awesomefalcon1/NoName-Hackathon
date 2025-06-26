@@ -121,7 +121,7 @@ function UploadRecipePageContent() {
         return ing
       }),
     )
-    toast({ title: "Ingredient Swapped!", variant: "success" })
+    toast({ title: "Ingredient Swapped!" })
   }
 
   const handleRemoveIngredient = (id: string) => {
@@ -191,7 +191,7 @@ function UploadRecipePageContent() {
       toast({
         title: "Recipe Submitted via API!",
         description: `Your recipe "${recipeName}" is now live! Recipe ID: ${result.recipeId}`,
-        variant: "success",
+        variant: "default",
       })
 
       // Reset form
