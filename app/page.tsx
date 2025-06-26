@@ -35,7 +35,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-neutral-800 text-neutral-800 hover:bg-neutral-800 hover:text-white"
+                className="bg-neutral-800 hover:bg-neutral-700 text-white"
               >
                 Upload Your Recipe
               </Button>
