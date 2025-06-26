@@ -5,17 +5,14 @@ import { getFirestore } from "firebase/firestore"
 import { getStorage } from "firebase/storage"
 
 // Your web app's Firebase configuration
-// IMPORTANT: It's generally recommended to store API keys and other sensitive
-// configuration in environment variables, especially for server-side code.
-// For client-side Firebase, the config is typically public, but ensure your
-// Firebase security rules are properly set up.
+// Using environment variables for better security and configuration management
 const firebaseConfig = {
-  apiKey: "AIzaSyC01XSCBk5ug_ebflV8qgXBO5ql7Kx01nY", // User provided
-  authDomain: "aibridge-73844.firebaseapp.com",
-  projectId: "aibridge-73844",
-  storageBucket: "aibridge-73844.appspot.com", // Corrected from firebasestorage.app
-  messagingSenderId: "663533012416",
-  appId: "1:663533012416:web:332341a048865d512cf425",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
 // Initialize Firebase

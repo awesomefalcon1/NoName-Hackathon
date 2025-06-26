@@ -430,9 +430,9 @@ SidebarGroup.displayName = "SidebarGroup"
 
 const SidebarGroupLabel = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & { asChild?: boolean }
->(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "div"
+  React.ComponentProps<"div"> & { aschild?: boolean }
+>(({ className, aschild = false, ...props }, ref) => {
+  const Comp = aschild ? Slot : "div"
 
   return (
     <Comp
@@ -451,9 +451,9 @@ SidebarGroupLabel.displayName = "SidebarGroupLabel"
 
 const SidebarGroupAction = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<"button"> & { asChild?: boolean }
->(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
+  React.ComponentProps<"button"> & { aschild?: boolean }
+>(({ className, aschild = false, ...props }, ref) => {
+  const Comp = aschild ? Slot : "button"
 
   return (
     <Comp
@@ -536,14 +536,14 @@ const sidebarMenuButtonVariants = cva(
 const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
-    asChild?: boolean
+    aschild?: boolean
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
     {
-      asChild = false,
+      aschild = false,
       isActive = false,
       variant = "default",
       size = "default",
@@ -553,7 +553,7 @@ const SidebarMenuButton = React.forwardRef<
     },
     ref
   ) => {
-    const Comp = asChild ? Slot : "button"
+    const Comp = aschild ? Slot : "button"
     const { isMobile, state } = useSidebar()
 
     const button = (
@@ -579,7 +579,7 @@ const SidebarMenuButton = React.forwardRef<
 
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipTrigger aschild>{button}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
@@ -595,11 +595,11 @@ SidebarMenuButton.displayName = "SidebarMenuButton"
 const SidebarMenuAction = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
-    asChild?: boolean
+    aschild?: boolean
     showOnHover?: boolean
   }
->(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
+>(({ className, aschild = false, showOnHover = false, ...props }, ref) => {
+  const Comp = aschild ? Slot : "button"
 
   return (
     <Comp
@@ -708,12 +708,12 @@ SidebarMenuSubItem.displayName = "SidebarMenuSubItem"
 const SidebarMenuSubButton = React.forwardRef<
   HTMLAnchorElement,
   React.ComponentProps<"a"> & {
-    asChild?: boolean
+    aschild?: boolean
     size?: "sm" | "md"
     isActive?: boolean
   }
->(({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : "a"
+>(({ aschild = false, size = "md", isActive, className, ...props }, ref) => {
+  const Comp = aschild ? Slot : "a"
 
   return (
     <Comp

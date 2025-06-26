@@ -94,7 +94,7 @@ function RecipesPageContent() {
                 : "No recipes available yet. Be the first to upload!"}
             </p>
             {!searchTerm && (
-              <Button asChild className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black">
+              <Button aschild className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black">
                 <Link href="/upload">Upload a Recipe</Link>
               </Button>
             )}
