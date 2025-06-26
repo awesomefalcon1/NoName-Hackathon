@@ -24,11 +24,13 @@ export default function SignInPage() {
     e.preventDefault()
     setIsLoading(true)
     try {
+      console.log("Attempting sign in with:", email)
       await signIn(email, password)
+      console.log("Sign in successful")
       toast({
         title: "Signed In!",
         description: "Welcome back to NoName Recipes!",
-        variant: "success",
+        variant: "default",
       })
       router.push("/") // Redirect to home page
     } catch (error) {
