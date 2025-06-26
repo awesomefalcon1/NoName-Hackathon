@@ -33,7 +33,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/recipes", label: "Recipes", icon: Compass },
+    { href: "/recipes", label: "Recipes", icon: Compass, requiresAuth: true }, // Added requiresAuth
     { href: "/upload", label: "Upload", icon: PlusCircle, requiresAuth: true },
     // Profile link will be handled separately based on auth state
   ]
@@ -50,15 +50,20 @@ export default function Navbar() {
 
         <nav className="hidden md:flex items-center space-x-6">
           {navLinks.map((link) => {
-            if (link.requiresAuth && !user && !loading) return null // Hide if auth required and not logged in
-            if (link.requiresAuth && loading)
+            // If auth is required, user is not logged in, and auth is not loading, hide the link
+            if (link.requiresAuth && !user && !loading) {
+              return null
+            }
+            // If auth is required and auth is loading, show a loader placeholder
+            if (link.requiresAuth && loading) {
               return (
-                // Show loader for auth-required links while loading
                 <div key={link.href} className="flex items-center space-x-1 text-neutral-400 dark:text-neutral-500">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>{link.label}</span>
                 </div>
               )
+            }
+            // Otherwise, render the link
             return (
               <Link
                 key={link.href}
@@ -74,19 +79,20 @@ export default function Navbar() {
               </Link>
             )
           })}
-          {user && !loading && (
-            <Link
-              href="/profile"
-              className={`flex items-center space-x-1 transition-colors ${
-                pathname === "/profile"
-                  ? "text-yellow-500 font-semibold"
-                  : "text-neutral-600 dark:text-neutral-300 hover:text-yellow-500 dark:hover:text-yellow-400"
-              }`}
-            >
-              <User className="h-4 w-4" />
-              <span>{userProfile?.firstName || "Profile"}</span>
-            </Link>
-          )}
+          {user &&
+            !loading && ( // Show profile link only if user is loaded and exists
+              <Link
+                href="/profile"
+                className={`flex items-center space-x-1 transition-colors ${
+                  pathname === "/profile"
+                    ? "text-yellow-500 font-semibold"
+                    : "text-neutral-600 dark:text-neutral-300 hover:text-yellow-500 dark:hover:text-yellow-400"
+                }`}
+              >
+                <User className="h-4 w-4" />
+                <span>{userProfile?.firstName || "Profile"}</span>
+              </Link>
+            )}
         </nav>
 
         <div className="flex items-center space-x-3">
