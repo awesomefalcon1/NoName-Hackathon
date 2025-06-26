@@ -1,19 +1,41 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Home, PlusCircle, Compass, User, ShoppingCart, Utensils } from "lucide-react"
-import { ModeToggle } from "./mode-toggle" // Assuming you have a theme toggle
+import { Home, PlusCircle, Compass, User, ShoppingCart, Utensils, LogOut, Loader2 } from "lucide-react"
+import { ModeToggle } from "./mode-toggle"
+import { useAuth } from "@/context/auth-context"
+import { useToast } from "./ui/use-toast"
 
 export default function Navbar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { user, signOut, loading, userProfile } = useAuth()
+  const { toast } = useToast()
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      })
+      router.push("/")
+    } catch (error) {
+      toast({
+        title: "Sign Out Failed",
+        description: "Could not sign out. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   const navLinks = [
     { href: "/", label: "Home", icon: Home },
     { href: "/recipes", label: "Recipes", icon: Compass },
-    { href: "/upload", label: "Upload", icon: PlusCircle },
-    { href: "/profile", label: "Profile", icon: User },
+    { href: "/upload", label: "Upload", icon: PlusCircle, requiresAuth: true },
+    // Profile link will be handled separately based on auth state
   ]
 
   return (
@@ -27,20 +49,44 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6">
-          {navLinks.map((link) => (
+          {navLinks.map((link) => {
+            if (link.requiresAuth && !user && !loading) return null // Hide if auth required and not logged in
+            if (link.requiresAuth && loading)
+              return (
+                // Show loader for auth-required links while loading
+                <div key={link.href} className="flex items-center space-x-1 text-neutral-400 dark:text-neutral-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{link.label}</span>
+                </div>
+              )
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center space-x-1 transition-colors ${
+                  pathname === link.href
+                    ? "text-yellow-500 font-semibold"
+                    : "text-neutral-600 dark:text-neutral-300 hover:text-yellow-500 dark:hover:text-yellow-400"
+                }`}
+              >
+                <link.icon className="h-4 w-4" />
+                <span>{link.label}</span>
+              </Link>
+            )
+          })}
+          {user && !loading && (
             <Link
-              key={link.href}
-              href={link.href}
+              href="/profile"
               className={`flex items-center space-x-1 transition-colors ${
-                pathname === link.href
+                pathname === "/profile"
                   ? "text-yellow-500 font-semibold"
                   : "text-neutral-600 dark:text-neutral-300 hover:text-yellow-500 dark:hover:text-yellow-400"
               }`}
             >
-              <link.icon className="h-4 w-4" />
-              <span>{link.label}</span>
+              <User className="h-4 w-4" />
+              <span>{userProfile?.firstName || "Profile"}</span>
             </Link>
-          ))}
+          )}
         </nav>
 
         <div className="flex items-center space-x-3">
@@ -50,7 +96,20 @@ export default function Navbar() {
             </Button>
           </Link>
           <ModeToggle />
-          <Button className="hidden sm:inline-flex bg-yellow-500 hover:bg-yellow-600 text-black">Sign In</Button>
+          {loading ? (
+            <Button variant="outline" size="sm" disabled>
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </Button>
+          ) : user ? (
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="flex items-center space-x-1">
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </Button>
+          ) : (
+            <Link href="/signin">
+              <Button className="hidden sm:inline-flex bg-yellow-500 hover:bg-yellow-600 text-black">Sign In</Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>

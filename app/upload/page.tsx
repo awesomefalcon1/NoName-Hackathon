@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -11,6 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UploadCloud, Wand2, Edit3, CheckCircle, AlertTriangle, Loader2, PlusCircle, Trash2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
+import { useAuth } from "@/context/auth-context"
+import { useRouter } from "next/navigation"
+import { storage, db } from "@/lib/firebase" // For Firebase storage and Firestore
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
 
 interface Ingredient {
   id: string
@@ -27,6 +32,21 @@ interface StoreProduct {
 }
 
 export default function UploadRecipePage() {
+  const { user, loading: authLoading } = useAuth()
+  const router = useRouter()
+  const { toast } = useToast()
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upload a recipe.",
+        variant: "destructive",
+      })
+      router.push("/signin")
+    }
+  }, [user, authLoading, router])
+
   const [recipeName, setRecipeName] = useState("")
   const [recipeImage, setRecipeImage] = useState<File | null>(null)
   const [recipeImageUrl, setRecipeImageUrl] = useState<string | null>(null)
@@ -36,7 +56,6 @@ export default function UploadRecipePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isEditingRecipe, setIsEditingRecipe] = useState(false)
   const [editedRecipe, setEditedRecipe] = useState("")
-  const { toast } = useToast()
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -48,6 +67,12 @@ export default function UploadRecipePage() {
 
   const handleGenerateRecipe = async (e: FormEvent) => {
     e.preventDefault()
+
+    if (!user) {
+      toast({ title: "Not Authenticated", description: "Please sign in first.", variant: "destructive" })
+      return
+    }
+
     if (!recipeName || !recipeImage || !briefIngredients) {
       toast({
         title: "Missing Information",
@@ -131,16 +156,81 @@ export default function UploadRecipePage() {
   }
 
   const handleSubmitRecipe = async () => {
-    // Final submission logic
+    if (!user) {
+      toast({ title: "Not Authenticated", description: "Please sign in first.", variant: "destructive" })
+      return
+    }
+    if (!recipeImage || !generatedRecipe || extractedIngredients.length === 0) {
+      toast({
+        title: "Incomplete Recipe",
+        description: "Ensure image, recipe steps, and ingredients are set.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    toast({
-      title: "Recipe Submitted!",
-      description: `Your recipe "${recipeName}" is now live and earning you points!`,
-      variant: "success",
-    })
-    // Reset form or redirect
+    try {
+      // 1. Upload image to Firebase Storage
+      const imageRef = ref(storage, `recipeImages/${user.uid}/${Date.now()}_${recipeImage.name}`)
+      const snapshot = await uploadBytes(imageRef, recipeImage)
+      const imageUrl = await getDownloadURL(snapshot.ref)
+
+      // 2. Prepare recipe data for Firestore
+      const recipeData = {
+        userId: user.uid,
+        userName: user.displayName || user.email, // Or use profile name from AuthContext
+        recipeName,
+        briefIngredients, // Store the original brief ingredients
+        fullRecipe: editedRecipe, // Store the (potentially edited) full recipe
+        ingredients: extractedIngredients.map((ing) => ({
+          // Store structured ingredients
+          name: ing.name,
+          quantity: ing.quantity,
+          storeProductId: ing.storeProduct?.id || null, // Link to store product if matched
+          storeProductName: ing.storeProduct?.name || null,
+        })),
+        imageUrl,
+        createdAt: serverTimestamp(),
+        likes: 0,
+        // comments: [], // You might want an array or subcollection for comments
+      }
+
+      // 3. Add recipe to Firestore
+      const docRef = await addDoc(collection(db, "recipes"), recipeData)
+
+      setIsLoading(false)
+      toast({
+        title: "Recipe Submitted!",
+        description: `Your recipe "${recipeName}" is now live! Doc ID: ${docRef.id}`,
+        variant: "success",
+      })
+      // Reset form or redirect
+      setRecipeName("")
+      setRecipeImage(null)
+      setRecipeImageUrl(null)
+      setBriefIngredients("")
+      setGeneratedRecipe(null)
+      setExtractedIngredients([])
+      setIsEditingRecipe(false)
+      router.push(`/recipes/${docRef.id}`) // Optionally redirect to the new recipe page
+    } catch (error) {
+      setIsLoading(false)
+      console.error("Error submitting recipe:", error)
+      toast({
+        title: "Submission Failed",
+        description: "Could not submit your recipe. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-4rem)]">
+        <Loader2 className="h-12 w-12 animate-spin text-yellow-500" />
+      </div>
+    )
   }
 
   return (

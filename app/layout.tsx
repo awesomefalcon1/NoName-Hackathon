@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
 import { Toaster } from "@/components/ui/toaster"
+import { AuthProvider } from "@/context/auth-context" // Import AuthProvider
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   title: "NoName Recipes - Share, Cook, Earn!",
   description: "Share your favorite recipes, discover new ones, and earn PCO points with NoName Products.",
   icons: {
-    icon: "/favicon.ico", // We'll need a new favicon
+    icon: "/favicon.ico",
   },
     generator: 'v0.dev'
 }
@@ -26,10 +27,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-gray-100 dark:bg-neutral-900`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Navbar />
-          <main className="pt-16 min-h-screen">{children}</main>
-          <Toaster />
-          <Footer />
+          <AuthProvider>
+            {" "}
+            {/* Wrap with AuthProvider */}
+            <Navbar />
+            <main className="pt-16 min-h-screen">{children}</main>
+            <Toaster />
+            <Footer />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
