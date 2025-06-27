@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { ChefHat, Clock, Users, Utensils, Loader2, Star } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { ToastManager } from "@/lib/toast-manager"
 import Image from "next/image"
 
 interface Recipe {
@@ -24,19 +24,17 @@ export default function GeneratedRecipePage() {
   const [ingredients, setIngredients] = useState("")
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  const [streamingResponse, setStreamingResponse] = useState("")
 
   const generateRecipe = async () => {
     if (!ingredients.trim()) {
-      toast({
-        title: "Missing Ingredients",
-        description: "Please enter some ingredients to generate a recipe.",
-        variant: "destructive",
-      })
+      ToastManager.missingIngredients()
       return
     }
 
     setIsLoading(true)
+    setStreamingResponse("")
+    setRecipe(null)
     
     try {
       const response = await fetch('/api/chat', {
@@ -47,51 +45,76 @@ export default function GeneratedRecipePage() {
         body: JSON.stringify({
           messages: [
             {
-              role: 'system',
-              content: 'You are a professional chef assistant. Generate a complete recipe based on the given ingredients. Return the response as a JSON object with the following structure: { "title": "Recipe Name", "description": "Brief description", "cookTime": "30 minutes", "servings": 4, "difficulty": "Easy/Medium/Hard", "ingredients": ["ingredient 1", "ingredient 2"], "instructions": ["step 1", "step 2"], "tips": ["tip 1", "tip 2"] }'
-            },
-            {
               role: 'user',
               content: `Create a recipe using these ingredients: ${ingredients}`
             }
           ]
         })
       })
-
+      console.log('Response status:', response.body)
       if (!response.ok) {
         throw new Error('Failed to generate recipe')
       }
 
+      // Handle streaming response
       const reader = response.body?.getReader()
       let result = ''
+      let accumulatedContent = ''
       
       if (reader) {
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
-          result += new TextDecoder().decode(value)
+          const chunk = new TextDecoder().decode(value)
+          result += chunk
+          
+          // Parse streaming chunks to extract actual content
+          const lines = chunk.split('\n')
+          for (const line of lines) {
+            if (line.startsWith('0:"')) {
+              // Extract content from streaming format: 0:"content"
+              const match = line.match(/^0:"(.*)"$/)
+              if (match) {
+                const content = match[1]
+                  .replace(/\\"/g, '"')
+                  .replace(/\\n/g, '\n')
+                  .replace(/\\t/g, '\t')
+                accumulatedContent += content
+                setStreamingResponse(accumulatedContent) // Append to growing response
+              }
+            }
+          }
         }
       }
 
-      // Parse the streaming response to extract JSON
-      const jsonMatch = result.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        const recipeData = JSON.parse(jsonMatch[0])
-        setRecipe(recipeData)
-        toast({
-          title: "Recipe Generated!",
-          description: "Your delicious recipe is ready.",
-        })
-      } else {
-        throw new Error('Invalid response format')
+      // Parse the final response to extract JSON
+      console.log('Final accumulated content:', accumulatedContent)
+      
+      // The accumulated content should be clean JSON
+      let recipeData: Recipe
+      try {
+        recipeData = JSON.parse(accumulatedContent.trim())
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError)
+        console.error('Raw response:', result)
+        console.error('Accumulated content:', accumulatedContent)
+        throw new Error('Invalid JSON format in response')
       }
+
+      // Validate required fields
+      if (!recipeData.title || !recipeData.ingredients || !recipeData.instructions) {
+        throw new Error('Recipe data is missing required fields')
+      }
+
+      setRecipe(recipeData)
+
+
+
+      ToastManager.recipeGenerationSuccess()
+      
     } catch (error) {
       console.error('Error generating recipe:', error)
-      toast({
-        title: "Error",
-        description: "Failed to generate recipe. Please try again.",
-        variant: "destructive",
-      })
+      ToastManager.recipeGenerationError()
     } finally {
       setIsLoading(false)
     }
@@ -141,6 +164,29 @@ export default function GeneratedRecipePage() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Live Streaming Response */}
+        {isLoading && streamingResponse && (
+          <Card className="bg-[#1a1025] border-yellow-500/30 mb-12">
+            <CardHeader>
+              <CardTitle className="text-yellow-500 flex items-center">
+                <ChefHat className="h-5 w-5 mr-2 animate-pulse" />
+                Chef is cooking up your recipe...
+              </CardTitle>
+              <CardDescription className="text-white/80">
+                Watch as your recipe comes to life
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-black/20 rounded-lg p-4 text-white/90 max-h-96 overflow-y-auto border border-yellow-500/20">
+                <div className="whitespace-pre-wrap break-words">
+                  {streamingResponse}
+                  <span className="inline-block w-2 h-5 bg-yellow-500 animate-pulse ml-1"></span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Generated Recipe */}
         {recipe && (

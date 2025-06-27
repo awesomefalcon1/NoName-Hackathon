@@ -8,14 +8,13 @@ import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/auth-context"
 import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { ToastManager } from "@/lib/toast-manager"
 import { Loader2 } from "lucide-react"
 import type { FirebaseError } from "firebase/app"
 
 export default function SignInPage() {
   const { signIn } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -27,11 +26,7 @@ export default function SignInPage() {
       console.log("Attempting sign in with:", email)
       await signIn(email, password)
       console.log("Sign in successful")
-      toast({
-        title: "Signed In!",
-        description: "Welcome back to NoName Recipes!",
-        variant: "default",
-      })
+      ToastManager.success("Signed In!", "Welcome back to NoName Recipes!")
       router.push("/") // Redirect to home page
     } catch (error) {
       const firebaseError = error as FirebaseError
@@ -43,11 +38,7 @@ export default function SignInPage() {
       ) {
         errorMessage = "Invalid email or password. Please try again."
       }
-      toast({
-        title: "Sign In Failed",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      ToastManager.error("Sign In Failed", errorMessage)
       console.error("Sign in error:", firebaseError)
     } finally {
       setIsLoading(false)

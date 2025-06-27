@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { UploadCloud, Loader2, CheckCircle } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { ToastManager } from "@/lib/toast-manager"
 import Image from "next/image"
 import type { UploadRecipeCompleteResponse } from "@/models/api"
 
@@ -100,7 +100,7 @@ export default function RecipeUploadForm({ userId, onSuccess }: RecipeUploadForm
       toast({
         title: "Recipe Uploaded Successfully!",
         description: `Your recipe "${result.data?.name}" has been saved to the database.`,
-        variant: "success",
+        variant: "default",
       })
 
       // Call success callback if provided

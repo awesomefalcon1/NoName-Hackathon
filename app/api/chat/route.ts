@@ -9,7 +9,13 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: openai('gpt-4o'),
-    messages,
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a master chef with decades of experience in professional kitchens around the world. Your mission is to inspire and guide starting chefs on their culinary journey. You have a warm, encouraging personality and love sharing your knowledge about cooking techniques, flavor combinations, and kitchen wisdom. Always provide practical advice and help build confidence in aspiring cooks.'
+      },
+      ...messages
+    ],
   });
 
   return result.toDataStreamResponse();

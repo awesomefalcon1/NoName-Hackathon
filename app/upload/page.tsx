@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { UploadCloud, Wand2, Loader2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { ToastManager } from "@/lib/toast-manager"
 import Image from "next/image"
 
 interface Ingredient {
@@ -32,7 +32,6 @@ export default function UploadRecipePage() {
   const [recipeImageUrl, setRecipeImageUrl] = useState<string | null>(null)
   const [briefIngredients, setBriefIngredients] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -45,11 +44,7 @@ export default function UploadRecipePage() {
   const handleSubmission = async (e: FormEvent) => {
     e.preventDefault()
     if (!recipeName || !recipeImage || !briefIngredients) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide recipe name, image, and brief ingredients.",
-        variant: "destructive",
-      })
+      ToastManager.error("Missing Information", "Please provide recipe name, image, and brief ingredients.")
       return
     }
 
@@ -75,10 +70,7 @@ export default function UploadRecipePage() {
     await new Promise((resolve) => setTimeout(resolve, 2000))
     setIsLoading(false)
     
-    toast({
-      title: "Recipe Generated!",
-      description: `Your recipe "${recipeName}" has been generated successfully!`,
-    })
+    ToastManager.success("Recipe Generated!", `Your recipe "${recipeName}" has been generated successfully!`)
   }
 
   return (

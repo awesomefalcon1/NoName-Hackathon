@@ -6,28 +6,20 @@ import { Button } from "@/components/ui/button"
 import { Home, PlusCircle, Compass, User, ShoppingCart, Utensils, LogOut, Loader2 } from "lucide-react"
 import { ModeToggle } from "./mode-toggle"
 import { useAuth } from "@/context/auth-context"
-import { useToast } from "./ui/use-toast"
+import { ToastManager } from "@/lib/toast-manager"
 
 export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, signOut, loading, userProfile } = useAuth()
-  const { toast } = useToast()
 
   const handleSignOut = async () => {
     try {
       await signOut()
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out.",
-      })
+      ToastManager.success("Signed Out", "You have been successfully signed out.")
       router.push("/")
     } catch (error) {
-      toast({
-        title: "Sign Out Failed",
-        description: "Could not sign out. Please try again.",
-        variant: "destructive",
-      })
+      ToastManager.error("Sign Out Failed", "Could not sign out. Please try again.")
     }
   }
 

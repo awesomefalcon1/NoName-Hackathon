@@ -9,14 +9,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/context/auth-context"
 import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { ToastManager } from "@/lib/toast-manager"
 import { Loader2 } from "lucide-react"
 import type { FirebaseError } from "firebase/app"
 
 export default function GetStartedPage() {
   const { signUp } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [firstName, setFirstName] = useState("")
@@ -27,21 +26,13 @@ export default function GetStartedPage() {
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault()
     if (!agreedToTerms) {
-      toast({
-        title: "Terms and Conditions",
-        description: "You must agree to the terms and conditions to sign up.",
-        variant: "destructive",
-      })
+      ToastManager.error("Terms and Conditions", "You must agree to the terms and conditions to sign up.")
       return
     }
     setIsLoading(true)
     try {
       await signUp(email, password, firstName, lastName)
-      toast({
-        title: "Account Created!",
-        description: "Welcome to NoName Recipes! You're now signed in.",
-        variant: "success",
-      })
+      ToastManager.success("Account Created!", "Welcome to NoName Recipes! You're now signed in.")
       router.push("/") // Redirect to home page after successful sign up
     } catch (error) {
       const firebaseError = error as FirebaseError
@@ -51,11 +42,7 @@ export default function GetStartedPage() {
       } else if (firebaseError.code === "auth/weak-password") {
         errorMessage = "The password is too weak. Please choose a stronger password."
       }
-      toast({
-        title: "Sign Up Failed",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      ToastManager.error("Sign Up Failed", errorMessage)
       console.error("Sign up error:", firebaseError)
     } finally {
       setIsLoading(false)

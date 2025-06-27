@@ -28,7 +28,7 @@ import {
   Shield,
   Loader2,
 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { ToastManager } from "@/lib/toast-manager"
 import Image from "next/image"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
@@ -53,7 +53,6 @@ interface UserStats {
 function ProfilePageContent() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Profile editing state
@@ -188,20 +187,12 @@ function ProfilePageContent() {
         updatedAt: new Date(),
       })
 
-      toast({
-        title: "Profile Updated",
-        description: "Your profile information has been saved successfully.",
-        variant: "default",
-      })
+      ToastManager.success("Profile Updated", "Your profile information has been saved successfully.")
 
       setIsEditing(false)
     } catch (error) {
       console.error("Error updating profile:", error)
-      toast({
-        title: "Update Failed",
-        description: "Could not update your profile. Please try again.",
-        variant: "destructive",
-      })
+      ToastManager.error("Update Failed", "Could not update your profile. Please try again.")
     } finally {
       setIsSaving(false)
     }
@@ -224,22 +215,14 @@ function ProfilePageContent() {
     // Validate file type
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
     if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid File Type",
-        description: "Please select a valid image file (JPG, PNG, GIF, WebP).",
-        variant: "destructive",
-      })
+      ToastManager.error("Invalid File Type", "Please select a valid image file (JPG, PNG, GIF, WebP).")
       return
     }
 
     // Validate file size (5MB limit)
     const maxFileSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxFileSize) {
-      toast({
-        title: "File Too Large",
-        description: "Profile picture must be smaller than 5MB.",
-        variant: "destructive",
-      })
+      ToastManager.error("File Too Large", "Profile picture must be smaller than 5MB.")
       return
     }
 
@@ -272,11 +255,7 @@ function ProfilePageContent() {
       // Update local state with new photo URL
       setCurrentPhotoURL(result.photoURL || null)
 
-      toast({
-        title: "Profile Picture Updated",
-        description: "Your profile picture has been updated successfully!",
-        variant: "default",
-      })
+      ToastManager.success("Profile Picture Updated", "Your profile picture has been updated successfully!")
 
       // Clear the file input
       if (fileInputRef.current) {
@@ -284,11 +263,7 @@ function ProfilePageContent() {
       }
     } catch (error) {
       console.error("Error uploading profile picture:", error)
-      toast({
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Could not upload profile picture. Please try again.",
-        variant: "destructive",
-      })
+      ToastManager.error("Upload Failed", error instanceof Error ? error.message : "Could not upload profile picture. Please try again.")
     } finally {
       setIsUploadingPhoto(false)
     }
